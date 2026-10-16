@@ -1,0 +1,164 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Initialize Vite React frontend",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"npm create vite@latest frontend -- --template react && npm install --prefix frontend"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Scaffold frontend noninteractive",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"set npm_config_yes=true && npm create vite@latest frontend -- --template react && npm install --prefix frontend"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Install and build frontend",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d frontend && npm install && npm run build"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Audit frontend dependencies",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d frontend && npm audit"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run backend tests",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d backend && npm test"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Configure backend MongoDB environment",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d backend && node -e \"const fs=require('node:fs'); const file='.env'; let text=fs.readFileSync(file,'utf8'); const hasUri=/^\\\\s*MONGODB_URI\\\\s*=/m.test(text); text=text.replace(/^\\\\s*STORAGE_MODE\\\\s*=.*(?:\\\\r?\\\\n|$)/gm,''); if(!hasUri) text=text.replace(/\\\\s*$/, '\\\\n')+'MONGODB_URI=mongodb://127.0.0.1:27017/edu_tech\\\\n'; fs.writeFileSync(file,text); console.log('MongoDB URI '+(hasUri?'preserved':'added')+'; legacy storage mode removed.');\""
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Update backend MongoDB environment",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d backend && node scripts/configure-mongodb-env.js"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run backend tests after MongoDB switch",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d backend && npm test"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Seed MongoDB sample problems",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d backend && npm run seed"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify MongoDB seed is repeatable",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d backend && npm run seed"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Test stale MongoDB auth token handling",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d backend && npm test"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run function mode backend tests",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d backend && npm test"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Migrate MongoDB sample problems",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d backend && npm run seed"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Verify converted seed remains unchanged",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d backend && npm run seed"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}
