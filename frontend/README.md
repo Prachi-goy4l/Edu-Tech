@@ -6,8 +6,9 @@ Monaco; code execution is handled by the backend and Judge0.
 ## Run locally
 
 1. Start the backend using the instructions in `../backend/README.md`.
-2. Copy `.env.example` to `.env` if the backend is not at
-   `http://localhost:5000/api`.
+2. The Vite development server proxies `/api` requests to
+   `http://localhost:5000`; set `VITE_API_URL` in `.env` only if you need a
+   different API base URL.
 3. Run `npm install` and then `npm run dev`.
 4. Open the Vite URL printed in the terminal (usually `http://localhost:5173`).
 
