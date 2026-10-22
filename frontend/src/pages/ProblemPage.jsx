@@ -170,7 +170,7 @@ export function ProblemPage({ token }) {
         </section>
         <section className="editor-pane">
           <div className="editor-toolbar">
-            <div className="editor-file"><span className="file-dot" /> solution.<span>{fileExtension(selectedLanguage?.name)}</span><ChevronDown size={14} /></div>
+            <div className="editor-file"><span className="file-dot" /> solution.<span>{fileExtension(selectedLanguage?.name)}</span></div>
             <label className="language-select">
               <Code2 size={14} />
               <select value={languageId} onChange={(event) => changeLanguage(event.target.value)} disabled={!languages.length}>

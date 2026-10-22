@@ -4,7 +4,7 @@ const { functionRuntime } = require('./function-runner');
 const JUDGE0_BASE_URL = (process.env.JUDGE0_BASE_URL || 'https://ce.judge0.com')
   .replace(/\/+$/, '');
 const POLL_INTERVAL_MS = Number(process.env.JUDGE0_POLL_INTERVAL_MS || 1000);
-const POLL_TIMEOUT_MS = Number(process.env.JUDGE0_POLL_TIMEOUT_MS || 30000);
+const POLL_TIMEOUT_MS = Number(process.env.JUDGE0_POLL_TIMEOUT_MS || 90000);
 const LANGUAGE_CACHE_MS = 5 * 60 * 1000;
 let languageCache;
 let languageCacheExpiresAt = 0;
