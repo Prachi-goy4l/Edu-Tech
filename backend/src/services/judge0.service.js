@@ -58,7 +58,7 @@ async function execute({ sourceCode, languageId, input }) {
         source_code: sourceCode,
         language_id: languageId,
         stdin: input,
-        cpu_time_limit: Number(process.env.JUDGE0_CPU_TIME_LIMIT || 2),
+        cpu_time_limit: Number(process.env.JUDGE0_CPU_TIME_LIMIT || 5),
         memory_limit: Number(process.env.JUDGE0_MEMORY_LIMIT || 128000),
       }),
     },
