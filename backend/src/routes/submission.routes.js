@@ -10,6 +10,7 @@ router.post('/run', asyncHandler(submissionController.run));
 router.post('/', authenticate, asyncHandler(submissionController.submit));
 router.get('/', authenticate, asyncHandler(submissionController.history));
 router.get('/admin', authenticate, requireAdmin, asyncHandler(submissionController.adminHistory));
+router.get('/admin/leaderboard', authenticate, requireAdmin, asyncHandler(submissionController.adminLeaderboard));
 router.get('/:id', authenticate, asyncHandler(submissionController.getById));
 
 module.exports = router;

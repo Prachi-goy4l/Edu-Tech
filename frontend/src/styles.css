@@ -386,6 +386,15 @@ kbd { background: #353a4a; border: 1px solid #454a59; border-radius: 3px; color:
 .refresh-spinning { animation: refresh-spin 1s linear infinite; }
 @keyframes refresh-spin { to { transform: rotate(360deg); } }
 .admin-stats { margin-bottom: 22px; }
+.admin-leaderboard-panel { background: #fff; border: 1px solid #eceef4; border-radius: 11px; margin-bottom: 20px; padding: 21px; }
+.admin-leaderboard-note { color: #9298a8; font-size: 10px; margin: 8px 0 0; }
+.admin-rank-table-head, .admin-rank-row { align-items: center; column-gap: 16px; display: grid; grid-template-columns: minmax(70px, .5fr) minmax(160px, 2fr) minmax(120px, 1fr) minmax(75px, .6fr); min-width: 460px; }
+.admin-rank-table-head { border-bottom: 1px solid #edf0f4; color: #a0a6b3; font-size: 8px; font-weight: 700; letter-spacing: 1px; padding: 0 12px 11px; }
+.admin-rank-row { border-bottom: 1px solid #f0f1f5; color: #697184; font-size: 10px; min-height: 48px; padding: 8px 12px; }
+.admin-rank-row:last-child { border-bottom: 0; }
+.admin-rank-number { align-items: center; color: #777de3; display: flex; gap: 7px; }
+.admin-rank-name { color: #343a4e; font-size: 10px; }
+.admin-rank-points { color: #424960; }
 .admin-section-heading { align-items: center; display: flex; justify-content: space-between; gap: 16px; }
 .admin-section-heading h2 { color: #292f43; font: 600 17px "Space Grotesk", sans-serif; letter-spacing: -.35px; margin: 5px 0 0; }
 .admin-submissions-panel, .admin-create-panel { background: #fff; border: 1px solid #eceef4; border-radius: 11px; margin-bottom: 20px; padding: 21px; }
@@ -523,7 +532,7 @@ kbd { background: #353a4a; border: 1px solid #454a59; border-radius: 3px; color:
   .detail-verdict { margin-top: 25px; }
   .execution-metrics { gap: 6px; }
   .admin-stats { gap: 9px; }
-  .admin-submissions-panel, .admin-create-panel { padding: 15px 12px; }
+  .admin-submissions-panel, .admin-create-panel, .admin-leaderboard-panel { padding: 15px 12px; }
   .admin-section-heading { align-items: flex-start; }
   .admin-section-heading h2 { font-size: 15px; }
   .admin-filter select { max-width: 145px; }

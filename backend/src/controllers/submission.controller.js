@@ -54,6 +54,10 @@ async function adminHistory(request, response) {
   response.json(result);
 }
 
+async function adminLeaderboard(_request, response) {
+  response.json({ leaderboard: await submissionService.adminLeaderboard() });
+}
+
 async function getById(request, response) {
   response.json({
     submission: await submissionService.getById({
@@ -63,4 +67,12 @@ async function getById(request, response) {
   });
 }
 
-module.exports = { adminHistory, getById, history, languages, run, submit };
+module.exports = {
+  adminHistory,
+  adminLeaderboard,
+  getById,
+  history,
+  languages,
+  run,
+  submit,
+};

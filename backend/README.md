@@ -56,7 +56,14 @@ All request and response bodies are JSON. Protected routes use
 | `POST` | `/api/submissions` | Student | Evaluate against all tests and save the submission |
 | `GET` | `/api/submissions` | Student | View own history; supports `problemSlug`, `page`, `limit` |
 | `GET` | `/api/submissions/admin` | Admin | Review paginated submissions across students; supports `verdict`, `page`, `limit` |
+| `GET` | `/api/submissions/admin/leaderboard` | Admin | Rank students by points from distinct accepted problems |
 | `GET` | `/api/submissions/:id` | Student | View one of the student's submissions and source code |
+
+The admin leaderboard awards 10 points per Easy, 20 per Medium, and 30 per
+Hard problem solved. A problem counts once per student after an accepted
+submission. Rankings sort by points and then by number of problems solved;
+students tied on both share the same rank. Students with no accepted problems
+are included with zero points.
 
 Submission requests use this shape:
 

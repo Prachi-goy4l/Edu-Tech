@@ -8,6 +8,7 @@ const {
   isValidFunctionName,
 } = require('./function-runner');
 const { HttpError } = require('../utils/http-error');
+const { buildLeaderboard } = require('./leaderboard');
 
 const MAX_SOURCE_LENGTH = 100000;
 const MAX_TEST_CASES = 50;
@@ -367,6 +368,39 @@ async function adminHistory({ page, limit, verdict }) {
   };
 }
 
+async function adminLeaderboard() {
+  const [students, acceptedProblems] = await Promise.all([
+    Student.find({ role: 'student' }).select('_id name').lean(),
+    Submission.aggregate([
+      { $match: { verdict: 'accepted' } },
+      {
+        $lookup: {
+          from: Problem.collection.name,
+          localField: 'problem',
+          foreignField: '_id',
+          as: 'problemData',
+        },
+      },
+      { $unwind: '$problemData' },
+      {
+        $group: {
+          _id: { studentId: '$student', problemId: '$problem' },
+          difficulty: { $first: '$problemData.difficulty' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          studentId: '$_id.studentId',
+          problemId: '$_id.problemId',
+          difficulty: 1,
+        },
+      },
+    ]),
+  ]);
+  return buildLeaderboard(students, acceptedProblems);
+}
+
 async function getById({ studentId, submissionId }) {
   const submission = await Submission.findOne({
     _id: submissionId,
@@ -376,4 +410,12 @@ async function getById({ studentId, submissionId }) {
   return serializeSubmission(submission, true);
 }
 
-module.exports = { adminHistory, getById, history, listLanguages, run, submit };
+module.exports = {
+  adminHistory,
+  adminLeaderboard,
+  getById,
+  history,
+  listLanguages,
+  run,
+  submit,
+};

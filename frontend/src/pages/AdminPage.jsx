@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Activity, ArrowLeft, ArrowRight, BookOpen, CheckCircle2, RefreshCw, Users } from 'lucide-react';
-import { api, jsonBody, timeAgo } from '../api.js';
+import { Activity, ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Medal, RefreshCw, Users } from 'lucide-react';
+import { api, timeAgo } from '../api.js';
 import { ErrorBanner, PageLoader } from '../components/Feedback.jsx';
 import { StatCard } from '../components/StatCard.jsx';
 
@@ -20,6 +20,9 @@ export function AdminPage({ token }) {
   const [verdict, setVerdict] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [leaderboard, setLeaderboard] = useState(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+  const [leaderboardError, setLeaderboardError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -35,7 +38,21 @@ export function AdminPage({ token }) {
     }
   }, [page, token, verdict]);
 
+  const loadLeaderboard = useCallback(async () => {
+    setLeaderboardLoading(true);
+    try {
+      const result = await api('/submissions/admin/leaderboard', { token });
+      setLeaderboard(result.leaderboard || []);
+      setLeaderboardError('');
+    } catch (requestError) {
+      setLeaderboardError(requestError.message);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  }, [token]);
+
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadLeaderboard(); }, [loadLeaderboard]);
 
   if (loading && !data && !error) return <PageLoader label="Loading admin workspace" />;
 
@@ -52,7 +69,7 @@ export function AdminPage({ token }) {
           <h1>Admin <span className="heading-accent">workspace.</span></h1>
           <p>Manage coding challenges and review submissions across your student community.</p>
         </div>
-        <button className="button admin-refresh" type="button" onClick={load} disabled={loading}>
+        <button className="button admin-refresh" type="button" onClick={() => { load(); loadLeaderboard(); }} disabled={loading || leaderboardLoading}>
           <RefreshCw size={14} className={loading ? 'refresh-spinning' : ''} /> Refresh data
         </button>
       </div>
@@ -65,6 +82,30 @@ export function AdminPage({ token }) {
         <StatCard icon={<Users size={18} />} iconTone="violet" label="Student accounts" value={stats?.students ?? '—'} note="Registered learners" />
         <StatCard icon={<BookOpen size={18} />} iconTone="amber" label="Problems" value={stats?.problems ?? '—'} note="Available in the library" />
       </div>
+
+      <section className="panel admin-leaderboard-panel">
+        <div className="admin-section-heading">
+          <div><span className="section-kicker">STUDENT RANKINGS</span><h2>Leaderboard</h2></div>
+          <span className="admin-form-note">Easy 10 · Medium 20 · Hard 30 points</span>
+        </div>
+        <p className="admin-leaderboard-note">Each problem awards points once after the first accepted submission. Ties are ranked by problems solved.</p>
+        {leaderboardError && <ErrorBanner message={leaderboardError} onRetry={loadLeaderboard} />}
+        <div className="admin-table-scroll">
+          <div className="admin-rank-table-head"><span>RANK</span><span>STUDENT</span><span>PROBLEMS SOLVED</span><span>POINTS</span></div>
+          {leaderboardLoading
+            ? <div className="admin-table-message">Loading leaderboard…</div>
+            : leaderboard?.length
+              ? leaderboard.map((student, index) => (
+                <div className="admin-rank-row" key={`${student.rank}-${index}`}>
+                  <strong className="admin-rank-number"><Medal size={15} /> {student.rank}</strong>
+                  <strong className="admin-rank-name">{student.name}</strong>
+                  <span>{student.problemsSolved}</span>
+                  <strong className="admin-rank-points">{student.points}</strong>
+                </div>
+              ))
+              : !leaderboardError && <div className="admin-table-message">No student accounts to rank yet.</div>}
+        </div>
+      </section>
 
       <section className="panel admin-submissions-panel">
         <div className="admin-section-heading">
