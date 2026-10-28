@@ -45,6 +45,15 @@ async function history(request, response) {
   response.json(result);
 }
 
+async function adminHistory(request, response) {
+  const result = await submissionService.adminHistory({
+    verdict: request.query.verdict,
+    page: positiveInteger(request.query.page, 1, 1000000),
+    limit: positiveInteger(request.query.limit, 20, 100),
+  });
+  response.json(result);
+}
+
 async function getById(request, response) {
   response.json({
     submission: await submissionService.getById({
@@ -54,4 +63,4 @@ async function getById(request, response) {
   });
 }
 
-module.exports = { getById, history, languages, run, submit };
+module.exports = { adminHistory, getById, history, languages, run, submit };

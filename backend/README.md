@@ -22,6 +22,11 @@ student account; to grant a trusted account administrator access, set that
 student's `role` to `admin` directly in MongoDB. Registration never accepts a
 role from the client.
 
+Administrators sign in at `/admin/login`. Create an account normally, then
+have a trusted operator promote it by setting its `role` to `admin` in MongoDB.
+Never add public administrator registration or promote an account based only
+on a client-supplied role.
+
 - Function-style sample slug: `sum-two-numbers`
 - Function-style sample slug: `two-sum`
 
@@ -50,6 +55,7 @@ All request and response bodies are JSON. Protected routes use
 | `POST` | `/api/submissions/run` | Public | Run code against public tests only |
 | `POST` | `/api/submissions` | Student | Evaluate against all tests and save the submission |
 | `GET` | `/api/submissions` | Student | View own history; supports `problemSlug`, `page`, `limit` |
+| `GET` | `/api/submissions/admin` | Admin | Review paginated submissions across students; supports `verdict`, `page`, `limit` |
 | `GET` | `/api/submissions/:id` | Student | View one of the student's submissions and source code |
 
 Submission requests use this shape:

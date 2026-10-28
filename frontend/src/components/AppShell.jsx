@@ -1,4 +1,4 @@
-import { BookOpen, ChevronRight, Code2, History, LayoutDashboard, LogOut, Menu, X, Zap, ArrowRight } from 'lucide-react';
+import { BookOpen, ChevronRight, Code2, History, LayoutDashboard, LogOut, Menu, X, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 const TODAY_LABEL = new Date().toLocaleDateString('en-US', {
@@ -9,37 +9,47 @@ const TODAY_LABEL = new Date().toLocaleDateString('en-US', {
 
 export function AppShell({ student, onSignOut, mobileNavOpen, setMobileNavOpen }) {
   const location = useLocation();
+  const isAdmin = student?.role === 'admin';
   const pageTitle = location.pathname.startsWith('/problems/')
     ? 'Problem workspace'
     : location.pathname.startsWith('/problems')
       ? 'Problem library'
       : location.pathname.startsWith('/submissions')
         ? 'Submissions'
-        : 'Overview';
+        : location.pathname.startsWith('/admin')
+          ? 'Admin workspace'
+          : 'Overview';
 
   return (
     <div className="app-frame">
       <aside className={`sidebar ${mobileNavOpen ? 'sidebar-open' : ''}`}>
-        <Link to="/" className="brand sidebar-brand">
+        <Link to={isAdmin ? '/admin' : '/'} className="brand sidebar-brand">
           <span className="brand-mark"><Code2 size={20} strokeWidth={2.5} /></span>
           <span>codelab<span className="brand-period">.</span></span>
         </Link>
-        <div className="side-label">WORKSPACE</div>
+        <div className="side-label">{isAdmin ? 'ADMIN WORKSPACE' : 'WORKSPACE'}</div>
         <nav className="side-nav">
-          <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Overview" end />
-          <NavItem to="/problems" icon={<BookOpen size={18} />} label="Problems" />
-          <NavItem to="/submissions" icon={<History size={18} />} label="Submissions" />
+          {isAdmin
+            ? <>
+              <NavItem to="/admin" icon={<ShieldCheck size={18} />} label="Admin dashboard" end />
+              <NavItem to="/problems" icon={<BookOpen size={18} />} label="Problem library" />
+            </>
+            : <>
+              <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Overview" end />
+              <NavItem to="/problems" icon={<BookOpen size={18} />} label="Problems" />
+              <NavItem to="/submissions" icon={<History size={18} />} label="Submissions" />
+            </>}
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-tip">
             <div className="tip-icon"><Zap size={17} fill="currentColor" /></div>
-            <strong>Keep your streak alive</strong>
-            <span>A small step today makes a big difference tomorrow.</span>
-            <Link to="/problems">Find a challenge <ArrowRight size={13} /></Link>
+            <strong>{isAdmin ? 'Build a better library' : 'Keep your streak alive'}</strong>
+            <span>{isAdmin ? 'Create thoughtful challenges for every learner.' : 'A small step today makes a big difference tomorrow.'}</span>
+            <Link to={isAdmin ? '/admin' : '/problems'}>{isAdmin ? 'Open admin tools' : 'Find a challenge'} <ArrowRight size={13} /></Link>
           </div>
           <div className="profile-row">
             <div className="avatar">{student?.name?.charAt(0)?.toUpperCase() || 'S'}</div>
-            <div className="profile-copy"><strong>{student?.name || 'Student'}</strong><span>Student account</span></div>
+            <div className="profile-copy"><strong>{student?.name || (isAdmin ? 'Administrator' : 'Student')}</strong><span>{isAdmin ? 'Administrator' : 'Student'} account</span></div>
             <button className="icon-button profile-exit" onClick={onSignOut} aria-label="Sign out" title="Sign out">
               <LogOut size={16} />
             </button>

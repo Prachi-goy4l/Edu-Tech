@@ -1,7 +1,20 @@
 const assert = require('node:assert/strict');
 const jwt = require('jsonwebtoken');
 const test = require('node:test');
-const { authenticate } = require('../src/middlewares/auth.middleware');
+const { authenticate, requireAdmin } = require('../src/middlewares/auth.middleware');
+
+test('allows authenticated administrators through admin-only routes', () => {
+  let nextCalled = false;
+  requireAdmin({ student: { role: 'admin' } }, {}, () => { nextCalled = true; });
+  assert.equal(nextCalled, true);
+});
+
+test('rejects students from admin-only routes', () => {
+  let nextError;
+  requireAdmin({ student: { role: 'student' } }, {}, (error) => { nextError = error; });
+  assert.equal(nextError.statusCode, 403);
+  assert.equal(nextError.message, 'Administrator access is required');
+});
 
 test('rejects a signed legacy UUID token before querying MongoDB', async () => {
   const previousSecret = process.env.JWT_SECRET;

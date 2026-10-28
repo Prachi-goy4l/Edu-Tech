@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell.jsx';
 import { AuthScreen } from './pages/AuthScreen.jsx';
 import { DashboardPage } from './pages/DashboardPage.jsx';
 import { HistoryPage, SubmissionPage } from './pages/HistoryPage.jsx';
+import { AdminPage } from './pages/AdminPage.jsx';
 import { ProblemPage } from './pages/ProblemPage.jsx';
 import { ProblemsPage } from './pages/ProblemsPage.jsx';
 
@@ -55,19 +56,32 @@ function App() {
   const requireAuth = (element) => (
     session.token ? element : <Navigate to="/login" replace state={{ from: location }} />
   );
+  const requireAdmin = (element) => (
+    !session.token
+      ? <Navigate to="/admin/login" replace state={{ from: location }} />
+      : session.student?.role === 'admin'
+        ? element
+        : <Navigate to="/" replace />
+  );
 
   return (
     <Routes>
       <Route
         path="/login"
         element={session.token
-          ? <Navigate to="/" replace />
+          ? <Navigate to={session.student?.role === 'admin' ? '/admin' : '/'} replace />
           : <AuthScreen mode="login" onSuccess={session.signIn} />}
+      />
+      <Route
+        path="/admin/login"
+        element={session.token
+          ? <Navigate to={session.student?.role === 'admin' ? '/admin' : '/'} replace />
+          : <AuthScreen mode="admin-login" onSuccess={session.signIn} />}
       />
       <Route
         path="/register"
         element={session.token
-          ? <Navigate to="/" replace />
+          ? <Navigate to={session.student?.role === 'admin' ? '/admin' : '/'} replace />
           : <AuthScreen mode="register" onSuccess={session.signIn} />}
       />
       <Route
@@ -83,12 +97,30 @@ function App() {
           />,
         )}
       >
-        <Route index element={<DashboardPage token={session.token} student={session.student} />} />
-        <Route path="problems" element={<ProblemsPage />} />
+        <Route index element={session.student?.role === 'admin'
+          ? <Navigate to="/admin" replace />
+          : <DashboardPage token={session.token} student={session.student} />} />
+        <Route path="problems" element={<ProblemsPage isAdmin={session.student?.role === 'admin'} token={session.token} />} />
         <Route path="problems/:slug" element={<ProblemPage token={session.token} />} />
         <Route path="submissions" element={<HistoryPage token={session.token} />} />
         <Route path="submissions/:id" element={<SubmissionPage token={session.token} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+      <Route
+        path="/admin"
+        element={requireAdmin(
+          <AppShell
+            student={session.student}
+            onSignOut={() => {
+              session.signOut();
+              navigate('/admin/login');
+            }}
+            mobileNavOpen={mobileNavOpen}
+            setMobileNavOpen={setMobileNavOpen}
+          />,
+        )}
+      >
+        <Route index element={<AdminPage token={session.token} />} />
       </Route>
     </Routes>
   );

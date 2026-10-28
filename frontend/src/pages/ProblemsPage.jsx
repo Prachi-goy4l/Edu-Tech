@@ -3,8 +3,9 @@ import { ArrowUpRight, ChevronDown, CircleHelp, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { EmptyState, ErrorBanner, LoadingRows } from '../components/Feedback.jsx';
+import { AdminProblemForm } from '../components/AdminProblemForm.jsx';
 
-export function ProblemsPage() {
+export function ProblemsPage({ isAdmin = false, token }) {
   const [problems, setProblems] = useState([]);
   const [query, setQuery] = useState('');
   const [difficulty, setDifficulty] = useState('');
@@ -52,6 +53,7 @@ export function ProblemsPage() {
         )) : <EmptyState icon={<Search size={20} />} title="No matching problems" text="Try another search or change the difficulty filter." />}
       </section>
       <div className="library-footnote"><CircleHelp size={15} /> More problems will appear here as your library grows.</div>
+      {isAdmin && <AdminProblemForm token={token} onCreated={loadProblems} />}
     </div>
   );
 }

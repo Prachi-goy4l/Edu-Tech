@@ -5,6 +5,7 @@ import { api, jsonBody } from '../api.js';
 
 export function AuthScreen({ mode, onSuccess }) {
   const isRegister = mode === 'register';
+  const isAdminLogin = mode === 'admin-login';
   const navigate = useNavigate();
   const location = useLocation();
   const [name, setName] = useState('');
@@ -22,8 +23,12 @@ export function AuthScreen({ mode, onSuccess }) {
         method: 'POST',
         body: jsonBody(isRegister ? { name, email, password } : { email, password }),
       });
+      if (isAdminLogin && result.student?.role !== 'admin') {
+        setError('This account does not have administrator access.');
+        return;
+      }
       onSuccess(result);
-      navigate(location.state?.from?.pathname || '/', { replace: true });
+      navigate(location.state?.from?.pathname || (result.student?.role === 'admin' ? '/admin' : '/'), { replace: true });
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -56,10 +61,10 @@ export function AuthScreen({ mode, onSuccess }) {
           <span className="brand-mark"><Code2 size={20} /></span> codelab<span className="brand-period">.</span>
         </div>
         <div className="auth-form-wrap">
-          <span className="auth-overline">{isRegister ? 'GET STARTED' : 'WELCOME BACK'}</span>
-          <h2>{isRegister ? 'Create your account' : 'Pick up where you left off.'}</h2>
+          <span className="auth-overline">{isRegister ? 'GET STARTED' : isAdminLogin ? 'ADMINISTRATOR ACCESS' : 'WELCOME BACK'}</span>
+          <h2>{isRegister ? 'Create your account' : isAdminLogin ? 'Sign in to your workspace.' : 'Pick up where you left off.'}</h2>
           <p className="auth-subtitle">
-            {isRegister ? 'Your next big idea starts with a first line.' : 'Your coding journey is waiting.'}
+            {isRegister ? 'Your next big idea starts with a first line.' : isAdminLogin ? 'Manage problems and review student progress.' : 'Your coding journey is waiting.'}
           </p>
           <form className="auth-form" onSubmit={handleSubmit}>
             {isRegister && (
@@ -78,14 +83,18 @@ export function AuthScreen({ mode, onSuccess }) {
             </label>
             {error && <div className="alert-error" role="alert">{error}</div>}
             <button className="button button-primary auth-submit" type="submit" disabled={busy}>
-              {busy ? 'One moment…' : isRegister ? 'Create account' : 'Sign in'}
+              {busy ? 'One moment…' : isRegister ? 'Create account' : isAdminLogin ? 'Admin sign in' : 'Sign in'}
               {!busy && <ArrowRight size={17} />}
             </button>
           </form>
           <p className="auth-switch">
-            {isRegister ? 'Already have an account?' : 'New to CodeLab?'}{' '}
-            <Link to={isRegister ? '/login' : '/register'}>{isRegister ? 'Sign in' : 'Create an account'}</Link>
+            {isAdminLogin
+              ? <>Student account? <Link to="/login">Student sign in</Link></>
+              : isRegister
+                ? <>Already have an account? <Link to="/login">Sign in</Link></>
+                : <>New to CodeLab? <Link to="/register">Create an account</Link></>}
           </p>
+          {!isRegister && !isAdminLogin && <p className="auth-switch admin-login-link"><Link to="/admin/login">Administrator sign in</Link></p>}
         </div>
         <div className="auth-legal">A little progress each day adds up to big results.</div>
       </section>

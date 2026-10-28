@@ -15,3 +15,9 @@ Monaco; code execution is handled by the backend and Judge0.
 Create an account using the registration page. The backend stores accounts,
 problems, and submissions in MongoDB, so they persist when the server restarts.
 Run `npm run seed` from the backend directory to add the sample problems.
+
+Administrators sign in at `/admin/login`. An administrator account must first
+be created as a normal account and then promoted by a trusted operator in
+MongoDB; registration never grants administrator access. The admin workspace
+lets administrators publish stdin or function-style problems and review
+paginated submissions from every student.

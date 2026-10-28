@@ -1,5 +1,6 @@
 const Problem = require('../models/problem');
 const Submission = require('../models/submission');
+const Student = require('../models/student');
 const { execute, listLanguages } = require('./judge0.service');
 const {
   createFunctionDriver,
@@ -265,6 +266,107 @@ async function history({ studentId, page, limit, problemSlug }) {
   };
 }
 
+async function adminHistory({ page, limit, verdict }) {
+  const verdicts = [
+    'accepted',
+    'wrong_answer',
+    'time_limit_exceeded',
+    'compilation_error',
+    'runtime_error',
+    'internal_error',
+  ];
+  if (verdict) {
+    if (!verdicts.includes(verdict)) {
+      throw new HttpError(400, 'Verdict is not valid');
+    }
+  }
+
+  const [aggregateResult, studentCount, problemCount] = await Promise.all([
+    Submission.aggregate([
+      {
+        $lookup: {
+          from: Student.collection.name,
+          localField: 'student',
+          foreignField: '_id',
+          as: 'studentData',
+        },
+      },
+      { $unwind: '$studentData' },
+      {
+        $lookup: {
+          from: Problem.collection.name,
+          localField: 'problem',
+          foreignField: '_id',
+          as: 'problemData',
+        },
+      },
+      { $unwind: '$problemData' },
+      {
+        $facet: {
+          submissions: [
+            ...(verdict ? [{ $match: { verdict } }] : []),
+            { $sort: { createdAt: -1 } },
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            {
+              $project: {
+                _id: 0,
+                id: { $toString: '$_id' },
+                student: { name: '$studentData.name', email: '$studentData.email' },
+                problem: {
+                  slug: '$problemData.slug',
+                  title: '$problemData.title',
+                  difficulty: '$problemData.difficulty',
+                },
+                languageId: 1,
+                verdict: 1,
+                score: 1,
+                runtime: 1,
+                memory: 1,
+                createdAt: 1,
+              },
+            },
+          ],
+          filteredTotal: [
+            ...(verdict ? [{ $match: { verdict } }] : []),
+            { $count: 'count' },
+          ],
+          stats: [
+            {
+              $group: {
+                _id: null,
+                submissions: { $sum: 1 },
+                acceptedSubmissions: {
+                  $sum: { $cond: [{ $eq: ['$verdict', 'accepted'] }, 1, 0] },
+                },
+              },
+            },
+          ],
+        },
+      },
+    ]),
+    Student.countDocuments({ role: 'student' }),
+    Problem.countDocuments(),
+  ]);
+  const result = aggregateResult[0];
+  const stats = result.stats[0] || { submissions: 0, acceptedSubmissions: 0 };
+  return {
+    stats: {
+      submissions: stats.submissions,
+      acceptedSubmissions: stats.acceptedSubmissions,
+      students: studentCount,
+      problems: problemCount,
+    },
+    submissions: result.submissions,
+    pagination: {
+      page,
+      limit,
+      total: result.filteredTotal[0]?.count || 0,
+      pages: Math.ceil((result.filteredTotal[0]?.count || 0) / limit),
+    },
+  };
+}
+
 async function getById({ studentId, submissionId }) {
   const submission = await Submission.findOne({
     _id: submissionId,
@@ -274,4 +376,4 @@ async function getById({ studentId, submissionId }) {
   return serializeSubmission(submission, true);
 }
 
-module.exports = { getById, history, listLanguages, run, submit };
+module.exports = { adminHistory, getById, history, listLanguages, run, submit };
