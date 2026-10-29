@@ -3,6 +3,8 @@
 Node.js 18+ API for student accounts, coding problems, Judge0 execution, and
 submission history. MongoDB stores accounts, problems, and submissions.
 
+For Vercel deployment, see the repository's [deployment guide](../DEPLOYMENT.md).
+
 ## Run locally
 
 1. Install Node.js 18 or newer.

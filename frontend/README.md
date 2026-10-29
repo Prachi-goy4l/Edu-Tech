@@ -21,3 +21,5 @@ be created as a normal account and then promoted by a trusted operator in
 MongoDB; registration never grants administrator access. The admin workspace
 lets administrators publish stdin or function-style problems and review
 paginated submissions from every student.
+
+For Vercel deployment, see the repository's [deployment guide](../DEPLOYMENT.md).
