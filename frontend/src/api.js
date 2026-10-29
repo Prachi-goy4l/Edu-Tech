@@ -1,4 +1,7 @@
-const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '');
+const configuredApiUrl = (import.meta.env.VITE_API_URL || '/api').trim().replace(/\/+$/, '');
+const API_URL = configuredApiUrl.endsWith('/api')
+  ? configuredApiUrl
+  : `${configuredApiUrl}/api`;
 
 export class ApiError extends Error {
   constructor(message, status) {

@@ -36,12 +36,19 @@ same hosted database if you want to add the sample problems.
 4. Add this environment variable for Production (and Preview if needed):
    - `VITE_API_URL`: the backend origin followed by `/api`, for example
      `https://your-backend.vercel.app/api`.
+     Use the backend project's domain, not the frontend project's domain. The
+     `/api` suffix is added automatically if omitted, but the backend host is
+     still required.
 5. Deploy. The frontend Vercel configuration rewrites client-side routes such
    as `/admin/login` to the Vite app so direct links and refreshes work.
 
 After deployment, set `CLIENT_ORIGIN` on the backend to the final frontend
 domain, redeploy the backend, then verify `/api/health`, registration/login,
 problem loading, and a code submission.
+
+Vite embeds `VITE_API_URL` into the frontend at build time. After changing it
+in Vercel's project environment variables, trigger a new frontend deployment
+for the change to take effect.
 
 ## Runtime limitations
 
