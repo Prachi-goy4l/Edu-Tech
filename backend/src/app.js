@@ -6,6 +6,8 @@ const authRoutes = require('./routes/auth.routes');
 const problemRoutes = require('./routes/problem.routes');
 const submissionRoutes = require('./routes/submission.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const connectToDatabase = require('./config/database');
+const asyncHandler = require('./utils/async-handler');
 const { notFound, errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
@@ -27,6 +29,11 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 30 }));
 app.use('/api/submissions', rateLimit({ windowMs: 60 * 1000, limit: 20 }));
+
+app.use('/api', asyncHandler(async (_request, _response, next) => {
+  await connectToDatabase();
+  next();
+}));
 
 app.get('/api/health', (_request, response) => {
   response.json({ status: 'ok' });

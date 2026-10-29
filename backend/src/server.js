@@ -10,21 +10,16 @@ async function start() {
     throw new Error('JWT_SECRET must be configured with at least 32 characters');
   }
   await connectToDatabase();
-  const server = app.listen(port, () => {
+  app.listen(port, () => {
     console.log(`Backend listening on port ${port}`);
   });
-
-  const shutdown = () => {
-    server.close(() => {
-      process.exit(0);
-    });
-  };
-
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
 }
 
-start().catch((error) => {
-  console.error('Failed to start backend:', error);
-  process.exit(1);
-});
+if (require.main === module) {
+  start().catch((error) => {
+    console.error('Failed to start backend:', error);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = app;

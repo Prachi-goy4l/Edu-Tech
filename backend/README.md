@@ -4,6 +4,8 @@ Node.js 18+ API for student accounts, coding problems, Judge0 execution, and
 submission history. MongoDB stores accounts, problems, and submissions.
 
 For Vercel deployment, see the repository's [deployment guide](../DEPLOYMENT.md).
+The Express application is exported from `src/server.js` for Vercel Functions;
+locally, run `npm run dev` or `npm start` to start the HTTP server.
 
 ## Run locally
 

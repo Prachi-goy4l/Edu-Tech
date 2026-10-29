@@ -50,6 +50,12 @@ Vite embeds `VITE_API_URL` into the frontend at build time. After changing it
 in Vercel's project environment variables, trigger a new frontend deployment
 for the change to take effect.
 
+If `/api/health` works but login returns HTTP 500, check the **backend**
+deployment's Function logs and confirm `MONGODB_URI` points to a reachable
+MongoDB instance and `JWT_SECRET` is at least 32 characters. API requests
+connect to MongoDB before handling the route, and connection failures are
+reported through Express's error handler.
+
 ## Runtime limitations
 
 The backend function is configured for a maximum duration of 60 seconds, which
