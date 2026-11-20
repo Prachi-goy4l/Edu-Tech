@@ -94,8 +94,12 @@ export const LeaderboardPage: React.FC = () => {
               )}
 
               <div className="relative">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#252530] to-[#363644] border-2 border-[#454555] flex items-center justify-center text-xl font-bold text-white shadow-lg">
-                  {entry.avatar}
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#252530] to-[#363644] border-2 border-[#454555] flex items-center justify-center text-xl font-bold text-white shadow-lg overflow-hidden">
+                  {entry.avatar && entry.avatar.startsWith('http') ? (
+                    <img src={entry.avatar} alt={entry.name} className="w-full h-full object-cover" />
+                  ) : (
+                    entry.avatar
+                  )}
                 </div>
                 <div className="absolute -bottom-2 -right-2 p-1.5 rounded-full bg-[#121216] border border-[#2e2e38]">
                   {podiumConfig.icon}
@@ -220,13 +224,17 @@ export const LeaderboardPage: React.FC = () => {
                     <td className="py-3.5 px-4">
                       <div className="flex items-center space-x-3">
                         <div
-                          className={`w-7 h-7 rounded-lg text-white font-bold text-xs flex items-center justify-center ${
+                          className={`w-7 h-7 rounded-lg text-white font-bold text-xs flex items-center justify-center overflow-hidden ${
                             isUser
                               ? 'bg-gradient-to-tr from-amber-500 to-orange-600 shadow-sm'
                               : 'bg-[#252530] text-gray-300'
                           }`}
                         >
-                          {entry.avatar}
+                          {entry.avatar && entry.avatar.startsWith('http') ? (
+                            <img src={entry.avatar} alt={entry.name} className="w-full h-full object-cover" />
+                          ) : (
+                            entry.avatar
+                          )}
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className={`font-semibold ${isUser ? 'text-amber-400' : 'text-white'}`}>

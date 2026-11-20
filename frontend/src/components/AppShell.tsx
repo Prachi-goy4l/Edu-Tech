@@ -167,8 +167,12 @@ export const AppShell: React.FC = () => {
         <div className="p-4 border-t border-[#232328] space-y-3">
           <div className="flex items-center justify-between bg-[#19191e] border border-[#2a2a30] rounded-xl p-2.5">
             <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-600 to-orange-500 text-white font-bold text-xs flex items-center justify-center shadow-sm">
-                {user?.avatar || user?.name?.charAt(0) || 'U'}
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-600 to-orange-500 text-white font-bold text-xs flex items-center justify-center shadow-sm overflow-hidden">
+                {user?.avatar && user.avatar.startsWith('http') ? (
+                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  user?.avatar || user?.name?.charAt(0) || 'U'
+                )}
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-semibold text-white leading-tight">
