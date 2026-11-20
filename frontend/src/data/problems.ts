@@ -34,7 +34,7 @@ You can return the answer in any order.`,
       'Only one valid answer exists.'
     ],
     starterCode: {
-      python: `def twoSum(nums, target):
+      python: `def twoSum(nums: list[int], target: int) -> list[int]:
     # Write your solution here
     seen = {}
     for i, num in enumerate(nums):
@@ -62,57 +62,40 @@ function twoSum(nums, target) {
     return [];
 }
 `,
-      cpp: `#include <iostream>
-#include <vector>
+      cpp: `#include <vector>
 #include <unordered_map>
-
 using namespace std;
 
 class Solution {
 public:
     vector<int> twoSum(vector<int>& nums, int target) {
-        unordered_map<int, int> numMap;
+        // Write your solution here
+        unordered_map<int, int> seen;
         for (int i = 0; i < nums.size(); i++) {
             int complement = target - nums[i];
-            if (numMap.find(complement) != numMap.end()) {
-                return {numMap[complement], i};
+            if (seen.find(complement) != seen.end()) {
+                return {seen[complement], i};
             }
-            numMap[nums[i]] = i;
+            seen[nums[i]] = i;
         }
         return {};
     }
 };
-
-int main() {
-    Solution s;
-    vector<int> nums = {2, 7, 11, 15};
-    int target = 9;
-    vector<int> res = s.twoSum(nums, target);
-    cout << "[" << res[0] << ", " << res[1] << "]" << endl;
-    return 0;
-}
 `,
-      java: `import java.util.HashMap;
-import java.util.Arrays;
+      java: `import java.util.*;
 
 class Solution {
-    public static int[] twoSum(int[] nums, int target) {
-        HashMap<Integer, Integer> map = new HashMap<>();
+    public int[] twoSum(int[] nums, int target) {
+        // Write your solution here
+        Map<Integer, Integer> seen = new HashMap<>();
         for (int i = 0; i < nums.length; i++) {
             int complement = target - nums[i];
-            if (map.containsKey(complement)) {
-                return new int[] { map.get(complement), i };
+            if (seen.containsKey(complement)) {
+                return new int[]{seen.get(complement), i};
             }
-            map.put(nums[i], i);
+            seen.put(nums[i], i);
         }
-        return new int[] {};
-    }
-
-    public static void main(String[] args) {
-        int[] nums = {2, 7, 11, 15};
-        int target = 9;
-        int[] res = twoSum(nums, target);
-        System.out.println(Arrays.toString(res));
+        return new int[]{};
     }
 }
 `
@@ -155,8 +138,8 @@ Given a string \`s\`, return \`true\` if it is a palindrome, or \`false\` otherw
     starterCode: {
       python: `def isPalindrome(s: str) -> bool:
     # Write your solution here
-    cleaned = ''.join(c.lower() for c in s if c.isalnum())
-    return cleaned == cleaned[::-1]
+    clean = [c.lower() for c in s if c.isalnum()]
+    return clean == clean[::-1]
 `,
       javascript: `/**
  * @param {string} s
@@ -164,19 +147,18 @@ Given a string \`s\`, return \`true\` if it is a palindrome, or \`false\` otherw
  */
 function isPalindrome(s) {
     // Write your solution here
-    const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return cleaned === cleaned.split('').reverse().join('');
+    const clean = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return clean === clean.split('').reverse().join('');
 }
 `,
-      cpp: `#include <iostream>
-#include <string>
+      cpp: `#include <string>
 #include <cctype>
-
 using namespace std;
 
 class Solution {
 public:
     bool isPalindrome(string s) {
+        // Write your solution here
         int left = 0, right = s.length() - 1;
         while (left < right) {
             while (left < right && !isalnum(s[left])) left++;
@@ -188,15 +170,10 @@ public:
         return true;
     }
 };
-
-int main() {
-    Solution sol;
-    cout << (sol.isPalindrome("A man, a plan, a canal: Panama") ? "true" : "false") << endl;
-    return 0;
-}
 `,
       java: `class Solution {
-    public static boolean isPalindrome(String s) {
+    public boolean isPalindrome(String s) {
+        // Write your solution here
         int left = 0, right = s.length() - 1;
         while (left < right) {
             while (left < right && !Character.isLetterOrDigit(s.charAt(left))) left++;
@@ -208,10 +185,6 @@ int main() {
             right--;
         }
         return true;
-    }
-
-    public static void main(String[] args) {
-        System.out.println(isPalindrome("A man, a plan, a canal: Panama"));
     }
 }
 `
@@ -251,7 +224,7 @@ int main() {
       '1 <= n <= 10^4'
     ],
     starterCode: {
-      python: `def fizzBuzz(n: int):
+      python: `def fizzBuzz(n: int) -> list[str]:
     # Write your solution here
     res = []
     for i in range(1, n + 1):
@@ -281,15 +254,14 @@ function fizzBuzz(n) {
     return res;
 }
 `,
-      cpp: `#include <iostream>
-#include <vector>
+      cpp: `#include <vector>
 #include <string>
-
 using namespace std;
 
 class Solution {
 public:
     vector<string> fizzBuzz(int n) {
+        // Write your solution here
         vector<string> res;
         for (int i = 1; i <= n; i++) {
             if (i % 15 == 0) res.push_back("FizzBuzz");
@@ -300,23 +272,12 @@ public:
         return res;
     }
 };
-
-int main() {
-    Solution s;
-    auto res = s.fizzBuzz(5);
-    cout << "[";
-    for (size_t i = 0; i < res.size(); i++) {
-        cout << "\\"" << res[i] << "\\"" << (i + 1 < res.size() ? ", " : "");
-    }
-    cout << "]" << endl;
-    return 0;
-}
 `,
-      java: `import java.util.ArrayList;
-import java.util.List;
+      java: `import java.util.*;
 
 class Solution {
-    public static List<String> fizzBuzz(int n) {
+    public List<String> fizzBuzz(int n) {
+        // Write your solution here
         List<String> res = new ArrayList<>();
         for (int i = 1; i <= n; i++) {
             if (i % 15 == 0) res.add("FizzBuzz");
@@ -325,10 +286,6 @@ class Solution {
             else res.add(String.valueOf(i));
         }
         return res;
-    }
-
-    public static void main(String[] args) {
-        System.out.println(fizzBuzz(5));
     }
 }
 `

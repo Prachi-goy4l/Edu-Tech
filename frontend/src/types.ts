@@ -89,8 +89,8 @@ export interface LanguageOption {
 }
 
 export const LANGUAGE_OPTIONS: LanguageOption[] = [
-  { id: 'python', name: 'Python 3 (CPython 3.10)', monacoLang: 'python', version: '3.10' },
+  { id: 'python', name: 'Python 3 (Python 3.12)', monacoLang: 'python', version: '3.12' },
   { id: 'javascript', name: 'JavaScript (Node.js 20)', monacoLang: 'javascript', version: '20.x' },
-  { id: 'cpp', name: 'C++ (GCC 13.2)', monacoLang: 'cpp', version: '13.2' },
-  { id: 'java', name: 'Java (OpenJDK 21)', monacoLang: 'java', version: '21' },
+  { id: 'cpp', name: 'C++ (GCC 14)', monacoLang: 'cpp', version: '14.1' },
+  { id: 'java', name: 'Java (OpenJDK 17)', monacoLang: 'java', version: '17' },
 ];
