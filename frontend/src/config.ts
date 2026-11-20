@@ -1,3 +1,3 @@
 export const GOOGLE_CLIENT_ID =
   (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
-  '775935816856-hrdogqiiad88kobe12226nq3f3gap39g.apps.googleusercontent.com';
+  '433690075395-7aani2g16eltp572m6n2hfeq7jl8jbnu.apps.googleusercontent.com';
