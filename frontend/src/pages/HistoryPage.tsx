@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getStoredSubmissions } from '../services/storage';
 import { SubmissionRecord } from '../types';
+import { useAuth } from '../context/AuthContext';
 import {
   History,
   CheckCircle2,
@@ -15,9 +16,10 @@ import {
 } from 'lucide-react';
 
 export const HistoryPage: React.FC = () => {
+  const { user, isAdmin } = useAuth();
   const [filter, setFilter] = useState<'all' | 'accepted' | 'failed'>('all');
   const [viewingCode, setViewingCode] = useState<SubmissionRecord | null>(null);
-  const submissions = getStoredSubmissions();
+  const submissions = isAdmin ? getStoredSubmissions() : getStoredSubmissions(user?.id);
 
   const filtered = submissions.filter((sub) => {
     if (filter === 'accepted') return sub.status === 'Accepted';

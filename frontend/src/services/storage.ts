@@ -1,7 +1,7 @@
 import { Problem, SubmissionRecord, LeaderboardEntry, User } from '../types';
 import { PROBLEMS } from '../data/problems';
 
-const SUBMISSIONS_KEY = 'edu-tech-submissions-v1';
+const ALL_SUBMISSIONS_KEY = 'edu-tech-all-submissions-v1';
 const CUSTOM_PROBLEMS_KEY = 'edu-tech-custom-problems-v1';
 
 const INITIAL_SUBMISSIONS: SubmissionRecord[] = [
@@ -43,32 +43,83 @@ const INITIAL_SUBMISSIONS: SubmissionRecord[] = [
   },
 ];
 
-export function getStoredSubmissions(): SubmissionRecord[] {
+export function getCurrentUser(): User | null {
   try {
-    const raw = localStorage.getItem(SUBMISSIONS_KEY);
-    if (!raw) {
-      localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(INITIAL_SUBMISSIONS));
+    const raw = localStorage.getItem('edu-tech-user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getStoredSubmissions(targetUserId?: string): SubmissionRecord[] {
+  const user = getCurrentUser();
+  const activeId = targetUserId || user?.id;
+
+  // Admin view (without specific target user) sees all platform submissions
+  if (user?.role === 'admin' && !targetUserId) {
+    try {
+      const allRaw = localStorage.getItem(ALL_SUBMISSIONS_KEY);
+      if (allRaw) return JSON.parse(allRaw);
+    } catch {}
+    return INITIAL_SUBMISSIONS;
+  }
+
+  if (!activeId) return [];
+
+  // Seed sample data ONLY for the pre-configured Demo Student account
+  if (activeId === 'usr-student-1') {
+    const key = `edu-tech-submissions-${activeId}`;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) {
+        localStorage.setItem(key, JSON.stringify(INITIAL_SUBMISSIONS));
+        return INITIAL_SUBMISSIONS;
+      }
+      return JSON.parse(raw);
+    } catch {
       return INITIAL_SUBMISSIONS;
     }
-    return JSON.parse(raw);
+  }
+
+  // Any real new user (Google, Registration, etc.) starts completely fresh with 0 solved
+  const userKey = `edu-tech-submissions-${activeId}`;
+  try {
+    const raw = localStorage.getItem(userKey);
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    return INITIAL_SUBMISSIONS;
+    return [];
   }
 }
 
 export function saveSubmission(submission: Omit<SubmissionRecord, 'id' | 'timestamp'>): SubmissionRecord {
-  const all = getStoredSubmissions();
+  const user = getCurrentUser();
+  const activeId = user?.id || 'guest';
   const newRecord: SubmissionRecord = {
     ...submission,
     id: `sub-${Date.now()}`,
     timestamp: new Date().toISOString(),
   };
-  const updated = [newRecord, ...all];
+
+  // 1. Save to user's personal scoped submissions
+  const userKey = `edu-tech-submissions-${activeId}`;
+  const userSubmissions = getStoredSubmissions(activeId);
+  const updatedUser = [newRecord, ...userSubmissions];
   try {
-    localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(updated));
+    localStorage.setItem(userKey, JSON.stringify(updatedUser));
   } catch (err) {
-    console.error('Failed to save submission to localStorage', err);
+    console.error('Failed to save user submission to localStorage', err);
   }
+
+  // 2. Also record to platform-wide submissions for staff/admin oversight
+  try {
+    const allRaw = localStorage.getItem(ALL_SUBMISSIONS_KEY);
+    const allSubs: SubmissionRecord[] = allRaw ? JSON.parse(allRaw) : INITIAL_SUBMISSIONS;
+    localStorage.setItem(ALL_SUBMISSIONS_KEY, JSON.stringify([newRecord, ...allSubs]));
+  } catch (err) {
+    console.error('Failed to save to all submissions', err);
+  }
+
   return newRecord;
 }
 
@@ -86,7 +137,6 @@ export function getCustomProblems(): Problem[] {
 
 export function getStoredProblems(): Problem[] {
   const custom = getCustomProblems();
-  // Filter out any default problems overridden by custom ones
   const customIds = new Set(custom.map((p) => p.id));
   const base = PROBLEMS.filter((p) => !customIds.has(p.id));
   return [...base, ...custom];
@@ -94,7 +144,6 @@ export function getStoredProblems(): Problem[] {
 
 export function saveNewProblem(problem: Problem): Problem {
   const custom = getCustomProblems();
-  // If problem already exists in custom, update it; else prepend
   const existsIndex = custom.findIndex((p) => p.id === problem.id);
   let updated: Problem[];
   if (existsIndex >= 0) {
@@ -128,12 +177,15 @@ export function deleteProblem(id: string): boolean {
 
 // ----------------- Platform Stats -----------------
 
-export function getStats() {
-  const submissions = getStoredSubmissions();
+export function getStats(targetUser?: User | null) {
+  const user = targetUser || getCurrentUser();
+  const submissions = getStoredSubmissions(user?.id);
   const accepted = submissions.filter((s) => s.status === 'Accepted');
   const uniqueSolved = new Set(accepted.map((s) => s.problemId)).size;
-  const accuracy = submissions.length ? Math.round((accepted.length / submissions.length) * 100) : 100;
+  const accuracy = submissions.length ? Math.round((accepted.length / submissions.length) * 100) : 0;
   const totalProblems = getStoredProblems().length;
+
+  const streak = user?.id === 'usr-student-1' ? 4 : (submissions.length > 0 ? 1 : 0);
 
   return {
     totalSubmissions: submissions.length,
@@ -141,7 +193,7 @@ export function getStats() {
     problemsSolved: uniqueSolved,
     totalProblems,
     accuracy,
-    currentStreak: 4,
+    currentStreak: streak,
   };
 }
 
@@ -221,13 +273,11 @@ const SEED_LEADERBOARD_CANDIDATES: Omit<LeaderboardEntry, 'rank'>[] = [
 ];
 
 export function getLeaderboard(currentUser?: User | null): LeaderboardEntry[] {
-  const submissions = getStoredSubmissions();
+  const user = currentUser || getCurrentUser();
+  const submissions = getStoredSubmissions(user?.id);
   const problems = getStoredProblems();
   const problemMap = new Map(problems.map((p) => [p.id, p]));
 
-  // Calculate points for current user:
-  // Easy: 20 pts, Medium: 50 pts, Hard: 100 pts.
-  // Streak bonus: streak * 10
   const acceptedSubmissions = submissions.filter((s) => s.status === 'Accepted');
   const solvedProblemIds = Array.from(new Set(acceptedSubmissions.map((s) => s.problemId)));
 
@@ -239,22 +289,22 @@ export function getLeaderboard(currentUser?: User | null): LeaderboardEntry[] {
       else if (prob.difficulty === 'Medium') userPoints += 50;
       else if (prob.difficulty === 'Hard') userPoints += 100;
     } else {
-      userPoints += 30; // fallback points for custom problems
+      userPoints += 30;
     }
   }
 
-  const streak = 4;
-  userPoints += streak * 10; // streak bonus
-  const accuracy = submissions.length ? Math.round((acceptedSubmissions.length / submissions.length) * 100) : 100;
+  const streak = user?.id === 'usr-student-1' ? 4 : (submissions.length > 0 ? 1 : 0);
+  userPoints += streak * 10;
+  const accuracy = submissions.length ? Math.round((acceptedSubmissions.length / submissions.length) * 100) : 0;
 
-  const currentUserName = currentUser?.name || 'Rahul Kumar (You)';
-  const currentUserId = currentUser?.id || 'current-user';
+  const currentUserName = user?.name || 'Rahul Kumar (You)';
+  const currentUserId = user?.id || 'current-user';
 
   const userEntry: Omit<LeaderboardEntry, 'rank'> = {
     userId: currentUserId,
     name: `${currentUserName} (You)`,
-    avatar: currentUser?.avatar || currentUserName.charAt(0).toUpperCase(),
-    role: currentUser?.role || 'student',
+    avatar: user?.avatar || currentUserName.charAt(0).toUpperCase(),
+    role: user?.role || 'student',
     points: userPoints,
     problemsSolved: solvedProblemIds.length,
     accuracy,
@@ -264,7 +314,6 @@ export function getLeaderboard(currentUser?: User | null): LeaderboardEntry[] {
 
   const allEntries = [...SEED_LEADERBOARD_CANDIDATES, userEntry];
 
-  // Sort descending by points, then accuracy, then problemsSolved
   allEntries.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
@@ -276,4 +325,3 @@ export function getLeaderboard(currentUser?: User | null): LeaderboardEntry[] {
     rank: idx + 1,
   }));
 }
-

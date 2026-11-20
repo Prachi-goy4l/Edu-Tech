@@ -17,9 +17,9 @@ import {
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
-  const stats = getStats();
+  const stats = getStats(user);
   const problems = getStoredProblems();
-  const recentSubmissions = getStoredSubmissions().slice(0, 4);
+  const recentSubmissions = getStoredSubmissions(user?.id).slice(0, 4);
   const leaderboard = getLeaderboard(user);
   const myEntry = leaderboard.find((e) => e.isCurrentUser);
 

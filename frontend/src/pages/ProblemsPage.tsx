@@ -6,11 +6,11 @@ import { Search, Code2, ArrowRight, Tag, CheckCircle2, Sparkles, Trash2 } from '
 import { useAuth } from '../context/AuthContext';
 
 export const ProblemsPage: React.FC = () => {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [problems, setProblems] = useState<Problem[]>(getStoredProblems());
   const [search, setSearch] = useState('');
   const [selectedDiff, setSelectedDiff] = useState<string>('All');
-  const submissions = getStoredSubmissions();
+  const submissions = getStoredSubmissions(user?.id);
 
   const solvedIds = new Set(
     submissions.filter((s) => s.status === 'Accepted').map((s) => s.problemId)
