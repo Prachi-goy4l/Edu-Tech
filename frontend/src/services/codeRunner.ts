@@ -510,6 +510,93 @@ export async function executeCode(
       };
     }
 
+    if (problem.createdBy) {
+      if (problem.testCases.length === 0) {
+        return {
+          status: 'Wrong Answer',
+          testCaseResults: [],
+          errorDetails: 'This problem has no automated test cases.',
+        };
+      }
+
+      const testCaseResults: TestCaseResult[] = [];
+
+      for (const testCase of problem.testCases) {
+        const res = await callJudge0(code, languageId, testCase.input);
+
+        if (res.compile_output) {
+          return {
+            status: 'Compile Error',
+            testCaseResults: [
+              ...testCaseResults,
+              {
+                testCaseId: testCase.id,
+                input: testCase.input,
+                expected: testCase.expectedOutput,
+                actual: '',
+                passed: false,
+                error: res.compile_output,
+              },
+            ],
+            executionTimeMs: Math.round(performance.now() - startTime),
+            errorDetails: res.compile_output,
+          };
+        }
+
+        if (res.status?.id === 5) {
+          return {
+            status: 'Time Limit Exceeded',
+            testCaseResults: [
+              ...testCaseResults,
+              {
+                testCaseId: testCase.id,
+                input: testCase.input,
+                expected: testCase.expectedOutput,
+                actual: (res.stdout || '').trim(),
+                passed: false,
+              },
+            ],
+            executionTimeMs: Math.round(performance.now() - startTime),
+            errorDetails: res.stderr || undefined,
+          };
+        }
+
+        if ((res.stderr && res.status?.id !== 3) || (res.status?.id !== undefined && res.status.id >= 7)) {
+          return {
+            status: 'Runtime Error',
+            testCaseResults: [
+              ...testCaseResults,
+              {
+                testCaseId: testCase.id,
+                input: testCase.input,
+                expected: testCase.expectedOutput,
+                actual: (res.stdout || '').trim(),
+                passed: false,
+                error: res.stderr || res.status?.description,
+              },
+            ],
+            executionTimeMs: Math.round(performance.now() - startTime),
+            errorDetails: res.stderr || res.status?.description,
+          };
+        }
+
+        const actual = (res.stdout || '').trim();
+        testCaseResults.push({
+          testCaseId: testCase.id,
+          input: testCase.input,
+          expected: testCase.expectedOutput,
+          actual,
+          passed: normalizeOutput(actual) === normalizeOutput(testCase.expectedOutput),
+        });
+      }
+
+      return {
+        status: testCaseResults.every((testCase) => testCase.passed) ? 'Accepted' : 'Wrong Answer',
+        testCaseResults,
+        executionTimeMs: Math.round(performance.now() - startTime),
+      };
+    }
+
     // 2. Automated Testcase Evaluation
     let wrappedCode = code;
     if (language === 'python') {

@@ -173,6 +173,24 @@
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "Frontend npm build",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Frontend build from directory",
+			"type": "shell",
+			"command": "Set-Location 'C:\\Users\\prach\\Desktop\\major project\\Edu-Tech\\frontend'; npm run build",
+			"isBackground": false,
+			"problemMatcher": []
 		}
 	]
 }

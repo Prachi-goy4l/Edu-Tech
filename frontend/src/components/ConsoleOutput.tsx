@@ -198,7 +198,9 @@ export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
                         <span>Wrong Answer</span>
                       </div>
                     )}
-                    {(result.status === 'Compile Error' || result.status === 'Runtime Error') && (
+                    {(result.status === 'Compile Error' ||
+                      result.status === 'Runtime Error' ||
+                      result.status === 'Time Limit Exceeded') && (
                       <div className="flex items-center space-x-1.5 text-amber-400 font-bold text-base font-sans">
                         <AlertTriangle className="w-5 h-5" />
                         <span>{result.status}</span>

@@ -1,5 +1,6 @@
 import { Problem, SubmissionRecord, LeaderboardEntry, User } from '../types';
 import { PROBLEMS } from '../data/problems';
+import { migrateLegacyProblemStarterCode } from './problemTemplates';
 
 const ALL_SUBMISSIONS_KEY = 'edu-tech-all-submissions-v1';
 const CUSTOM_PROBLEMS_KEY = 'edu-tech-custom-problems-v1';
@@ -129,7 +130,7 @@ export function getCustomProblems(): Problem[] {
   try {
     const raw = localStorage.getItem(CUSTOM_PROBLEMS_KEY);
     if (!raw) return [];
-    return JSON.parse(raw);
+    return (JSON.parse(raw) as Problem[]).map(migrateLegacyProblemStarterCode);
   } catch {
     return [];
   }
@@ -157,6 +158,7 @@ export function saveNewProblem(problem: Problem): Problem {
     localStorage.setItem(CUSTOM_PROBLEMS_KEY, JSON.stringify(updated));
   } catch (err) {
     console.error('Failed to save custom problem to localStorage', err);
+    throw err;
   }
   return problem;
 }

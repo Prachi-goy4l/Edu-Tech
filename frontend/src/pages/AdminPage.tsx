@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getStoredProblems, saveNewProblem, deleteProblem, getStoredSubmissions } from '../services/storage';
-import { Problem, Difficulty, TestCase, SupportedLanguage } from '../types';
+import { getCustomProblemStarterCode } from '../services/problemTemplates';
+import { Problem, Difficulty, TestCase, SupportedLanguage, LANGUAGE_OPTIONS } from '../types';
 import {
   ShieldCheck,
   Users,
@@ -29,14 +30,17 @@ export const AdminPage: React.FC = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>('Easy');
   const [description, setDescription] = useState('');
   const [constraintsText, setConstraintsText] = useState('1 <= n <= 10^5\nAll elements are valid.');
-  const [exampleInput, setExampleInput] = useState('');
-  const [exampleOutput, setExampleOutput] = useState('');
-  const [exampleExplanation, setExampleExplanation] = useState('');
+  const [examples, setExamples] = useState<Problem['examples']>([
+    { input: '', output: '', explanation: '' },
+  ]);
+  const [starterCode, setStarterCode] = useState<Record<SupportedLanguage, string>>(
+    getCustomProblemStarterCode()
+  );
 
   // Dynamic Test Cases
   const [testCases, setTestCases] = useState<Array<{ input: string; expectedOutput: string }>>([
-    { input: 'nums = [1, 2, 3]', expectedOutput: '[3, 2, 1]' },
-    { input: 'nums = [4, 5]', expectedOutput: '[5, 4]' },
+    { input: '1 2 3', expectedOutput: '3 2 1' },
+    { input: '4 5', expectedOutput: '5 4' },
   ]);
 
   const handleAddTestCase = () => {
@@ -56,6 +60,16 @@ export const AdminPage: React.FC = () => {
     });
   };
 
+  const handleExampleChange = (
+    index: number,
+    field: 'input' | 'output' | 'explanation',
+    value: string
+  ) => {
+    setExamples((prev) => prev.map((example, i) =>
+      i === index ? { ...example, [field]: value } : example
+    ));
+  };
+
   const handleCreateProblem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
@@ -63,10 +77,37 @@ export const AdminPage: React.FC = () => {
       return;
     }
 
-    const problemId = title
+    if (examples.length === 0 || examples.some((example) => !example.input.trim() || !example.output.trim())) {
+      alert('Add at least one example with both input and output.');
+      return;
+    }
+
+    const savedExamples = examples.map((example) => ({
+      input: example.input.trim(),
+      output: example.output.trim(),
+      explanation: example.explanation?.trim() || undefined,
+    }));
+
+    if (testCases.some((testCase) => !testCase.input.trim() || !testCase.expectedOutput.trim())) {
+      alert('Every test case must have both input and expected output.');
+      return;
+    }
+
+    if (LANGUAGE_OPTIONS.some(({ id }) => !starterCode[id].trim())) {
+      alert('Provide starter code for every supported language.');
+      return;
+    }
+
+    const existingProblems = getStoredProblems();
+    const baseId = title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
+      .replace(/(^-|-$)/g, '') || `problem-${Date.now()}`;
+    let problemId = baseId;
+    let suffix = 2;
+    while (existingProblems.some((problem) => problem.id === problemId)) {
+      problemId = `${baseId}-${suffix++}`;
+    }
 
     const constraints = constraintsText
       .split('\n')
@@ -75,63 +116,42 @@ export const AdminPage: React.FC = () => {
 
     const formattedTestCases: TestCase[] = testCases.map((tc, idx) => ({
       id: idx + 1,
-      input: tc.input || '[]',
-      expectedOutput: tc.expectedOutput || '[]',
+      input: tc.input.trim(),
+      expectedOutput: tc.expectedOutput.trim(),
     }));
 
-    // Auto-generate clean starter code templates
-    const cleanFnName = title
-      .replace(/^\d+[\.\s]*/, '')
-      .replace(/[^a-zA-Z0-9 ]/g, '')
-      .split(' ')
-      .map((word, idx) =>
-        idx === 0
-          ? word.toLowerCase()
-          : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-      )
-      .join('') || 'solve';
-
-    const starterCode: Record<SupportedLanguage, string> = {
-      python: `def ${cleanFnName}(input_val):\n    # TODO: Implement your solution here\n    return input_val\n`,
-      javascript: `/**\n * @param {any} inputVal\n * @return {any}\n */\nfunction ${cleanFnName}(inputVal) {\n    // TODO: Implement your solution here\n    return inputVal;\n}\n`,
-      cpp: `#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\n\nclass Solution {\npublic:\n    void ${cleanFnName}() {\n        // TODO: Implement your solution here\n    }\n};\n`,
-      java: `class Solution {\n    public void ${cleanFnName}() {\n        // TODO: Implement your solution here\n    }\n}\n`,
-    };
-
     const newProblem: Problem = {
-      id: problemId || `prob-${Date.now()}`,
+      id: problemId,
       title: title.trim(),
       difficulty,
       category: category.trim(),
       description: description.trim(),
       createdBy: 'Staff / Admin',
       createdAt: new Date().toISOString(),
-      acceptanceRate: '100%',
-      examples: [
-        {
-          input: exampleInput.trim() || testCases[0]?.input || 'Sample Input',
-          output: exampleOutput.trim() || testCases[0]?.expectedOutput || 'Sample Output',
-          explanation: exampleExplanation.trim() || undefined,
-        },
-      ],
-      constraints: constraints.length ? constraints : ['Standard time and memory constraints apply.'],
+      examples: savedExamples,
+      constraints,
       starterCode,
       testCases: formattedTestCases,
     };
 
-    saveNewProblem(newProblem);
+    try {
+      saveNewProblem(newProblem);
+    } catch (error) {
+      alert(error instanceof Error ? `Could not publish problem: ${error.message}` : 'Could not publish problem.');
+      return;
+    }
+
     setProblems(getStoredProblems());
     setIsModalOpen(false);
 
     // Reset Form
     setTitle('');
     setDescription('');
-    setExampleInput('');
-    setExampleOutput('');
-    setExampleExplanation('');
+    setExamples([{ input: '', output: '', explanation: '' }]);
+    setStarterCode(getCustomProblemStarterCode());
     setTestCases([
-      { input: 'nums = [1, 2, 3]', expectedOutput: '[3, 2, 1]' },
-      { input: 'nums = [4, 5]', expectedOutput: '[5, 4]' },
+      { input: '1 2 3', expectedOutput: '3 2 1' },
+      { input: '4 5', expectedOutput: '5 4' },
     ]);
 
     setSuccessToast(`Challenge "${newProblem.title}" generated and published!`);
@@ -381,27 +401,61 @@ export const AdminPage: React.FC = () => {
                 />
               </div>
 
-              {/* Example Input / Output */}
+              {/* Problem Examples */}
               <div className="p-3 bg-[#131318] border border-[#262632] rounded-xl space-y-3">
-                <span className="font-semibold text-gray-300 text-[11px] uppercase tracking-wide">
-                  Public Problem Example (Shown on description)
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Input: s = ['h','e','l','l','o']"
-                    value={exampleInput}
-                    onChange={(e) => setExampleInput(e.target.value)}
-                    className="w-full bg-[#1b1b24] border border-[#2c2c38] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Output: ['o','l','l','e','h']"
-                    value={exampleOutput}
-                    onChange={(e) => setExampleOutput(e.target.value)}
-                    className="w-full bg-[#1b1b24] border border-[#2c2c38] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                  />
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-gray-300 text-[11px] uppercase tracking-wide">
+                    Public Examples
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setExamples((prev) => [...prev, { input: '', output: '', explanation: '' }])}
+                    className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-black border border-amber-500/30 text-xs font-semibold transition-all flex items-center space-x-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Example</span>
+                  </button>
                 </div>
+                {examples.map((example, index) => (
+                  <div key={index} className="space-y-2 p-3 bg-[#1b1b24] border border-[#2a2a36] rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-gray-400 font-semibold">Example {index + 1}</span>
+                      {examples.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setExamples((prev) => prev.filter((_, i) => i !== index))}
+                          className="p-1 rounded-lg text-gray-500 hover:text-rose-400 hover:bg-[#252530]"
+                          title="Remove example"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <textarea
+                        rows={2}
+                        placeholder="Input"
+                        value={example.input}
+                        onChange={(e) => handleExampleChange(index, 'input', e.target.value)}
+                        className="w-full bg-[#131318] border border-[#2e2e3c] rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+                      />
+                      <textarea
+                        rows={2}
+                        placeholder="Output"
+                        value={example.output}
+                        onChange={(e) => handleExampleChange(index, 'output', e.target.value)}
+                        className="w-full bg-[#131318] border border-[#2e2e3c] rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <textarea
+                      rows={2}
+                      placeholder="Explanation (optional)"
+                      value={example.explanation}
+                      onChange={(e) => handleExampleChange(index, 'explanation', e.target.value)}
+                      className="w-full bg-[#131318] border border-[#2e2e3c] rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                ))}
               </div>
 
               {/* Dynamic Test Cases Builder */}
@@ -410,7 +464,7 @@ export const AdminPage: React.FC = () => {
                   <div>
                     <h3 className="font-semibold text-white text-xs">Automated Evaluation Test Cases</h3>
                     <p className="text-[11px] text-gray-400">
-                      These test cases will be run automatically against student submissions in the compiler sandbox.
+                      Each input is sent to the solution on stdin; its output is compared with the expected output.
                     </p>
                   </div>
                   <button
@@ -430,16 +484,16 @@ export const AdminPage: React.FC = () => {
                       className="flex items-center gap-2 p-2.5 bg-[#1b1b24] border border-[#2a2a36] rounded-xl"
                     >
                       <span className="font-mono text-[10px] text-gray-500 w-6">#{index + 1}</span>
-                      <input
-                        type="text"
-                        placeholder="Input: e.g. nums = [1, 2, 3]"
+                      <textarea
+                        rows={2}
+                        placeholder="Input (stdin): e.g. 1 2 3"
                         value={tc.input}
                         onChange={(e) => handleTestCaseChange(index, 'input', e.target.value)}
                         className="flex-1 bg-[#131318] border border-[#2e2e3c] rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
                       />
-                      <input
-                        type="text"
-                        placeholder="Expected Output: e.g. [3, 2, 1]"
+                      <textarea
+                        rows={2}
+                        placeholder="Expected Output: e.g. 3 2 1"
                         value={tc.expectedOutput}
                         onChange={(e) => handleTestCaseChange(index, 'expectedOutput', e.target.value)}
                         className="flex-1 bg-[#131318] border border-[#2e2e3c] rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
@@ -468,6 +522,31 @@ export const AdminPage: React.FC = () => {
                   onChange={(e) => setConstraintsText(e.target.value)}
                   className="w-full bg-[#1b1b24] border border-[#2c2c38] rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
                 />
+              </div>
+
+              {/* Starter Code */}
+              <div className="p-4 bg-[#131318] border border-[#262632] rounded-xl space-y-3">
+                <div>
+                  <h3 className="font-semibold text-white text-xs">Starter Code by Language</h3>
+                  <p className="text-[11px] text-gray-400">
+                    Students receive the matching starter code when they open this problem.
+                  </p>
+                </div>
+                {LANGUAGE_OPTIONS.map((language) => (
+                  <div key={language.id} className="space-y-1.5">
+                    <label className="text-gray-300 font-semibold">{language.name}</label>
+                    <textarea
+                      required
+                      rows={7}
+                      value={starterCode[language.id]}
+                      onChange={(e) => setStarterCode((prev) => ({
+                        ...prev,
+                        [language.id]: e.target.value,
+                      }))}
+                      className="w-full bg-[#1b1b24] border border-[#2c2c38] rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                ))}
               </div>
 
               {/* Footer Buttons */}
