@@ -78,7 +78,7 @@ export const ProblemWorkspace: React.FC = () => {
           problemId: currentProblem.id,
           problemTitle: currentProblem.title,
           language,
-          status: res.status === 'Accepted' ? 'Accepted' : 'Wrong Answer',
+          status: res.status,
           runtimeMs: res.executionTimeMs || 45,
           testCasesPassed: passedCount,
           totalTestCases: currentProblem.testCases.length,

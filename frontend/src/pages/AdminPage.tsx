@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { getStoredProblems, saveNewProblem, deleteProblem, getStoredSubmissions } from '../services/storage';
-import { getCustomProblemStarterCode } from '../services/problemTemplates';
-import { Problem, Difficulty, TestCase, SupportedLanguage, LANGUAGE_OPTIONS } from '../types';
+import { getFunctionProblemStarterCode } from '../services/problemTemplates';
+import {
+  Problem,
+  Difficulty,
+  TestCase,
+  FunctionParameter,
+  FunctionValueType,
+  LANGUAGE_OPTIONS,
+} from '../types';
 import {
   ShieldCheck,
   Users,
@@ -18,6 +25,43 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+interface FunctionTestCaseDraft {
+  args: string;
+  expected: string;
+}
+
+const FUNCTION_VALUE_TYPES: FunctionValueType[] = [
+  'integer',
+  'number',
+  'boolean',
+  'string',
+  'integer[]',
+  'number[]',
+  'boolean[]',
+  'string[]',
+];
+
+function isValueOfType(value: unknown, type: FunctionValueType): boolean {
+  if (type.endsWith('[]')) {
+    if (!Array.isArray(value)) return false;
+    return value.every((item) => isValueOfType(item, type.slice(0, -2) as FunctionValueType));
+  }
+  switch (type) {
+    case 'integer': return typeof value === 'number' && Number.isInteger(value);
+    case 'number': return typeof value === 'number' && Number.isFinite(value);
+    case 'boolean': return typeof value === 'boolean';
+    case 'string': return typeof value === 'string';
+    default: return false;
+  }
+}
+
+function defaultValueForType(type: FunctionValueType): unknown {
+  if (type.endsWith('[]')) return [];
+  if (type === 'string') return '';
+  if (type === 'boolean') return false;
+  return 0;
+}
+
 export const AdminPage: React.FC = () => {
   const [problems, setProblems] = useState<Problem[]>(getStoredProblems());
   const [submissions] = useState(getStoredSubmissions());
@@ -30,21 +74,26 @@ export const AdminPage: React.FC = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>('Easy');
   const [description, setDescription] = useState('');
   const [constraintsText, setConstraintsText] = useState('1 <= n <= 10^5\nAll elements are valid.');
-  const [examples, setExamples] = useState<Problem['examples']>([
-    { input: '', output: '', explanation: '' },
+  const [functionName, setFunctionName] = useState('sum');
+  const [parameters, setParameters] = useState<FunctionParameter[]>([
+    { name: 'a', type: 'integer' },
+    { name: 'b', type: 'integer' },
   ]);
-  const [starterCode, setStarterCode] = useState<Record<SupportedLanguage, string>>(
-    getCustomProblemStarterCode()
-  );
+  const [returnType, setReturnType] = useState<FunctionValueType>('integer');
+  const [examples, setExamples] = useState<Problem['examples']>([
+    { input: '[2, 3]', output: '5', explanation: 'Return the sum of the two arguments.' },
+  ]);
 
-  // Dynamic Test Cases
-  const [testCases, setTestCases] = useState<Array<{ input: string; expectedOutput: string }>>([
-    { input: '1 2 3', expectedOutput: '3 2 1' },
-    { input: '4 5', expectedOutput: '5 4' },
+  const [testCases, setTestCases] = useState<FunctionTestCaseDraft[]>([
+    { args: '[2, 3]', expected: '5' },
+    { args: '[-4, 10]', expected: '6' },
   ]);
 
   const handleAddTestCase = () => {
-    setTestCases((prev) => [...prev, { input: '', expectedOutput: '' }]);
+    setTestCases((prev) => [...prev, {
+      args: JSON.stringify(parameters.map((parameter) => defaultValueForType(parameter.type))),
+      expected: '',
+    }]);
   };
 
   const handleRemoveTestCase = (index: number) => {
@@ -52,7 +101,7 @@ export const AdminPage: React.FC = () => {
     setTestCases((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleTestCaseChange = (index: number, field: 'input' | 'expectedOutput', value: string) => {
+  const handleTestCaseChange = (index: number, field: keyof FunctionTestCaseDraft, value: string) => {
     setTestCases((prev) => {
       const next = [...prev];
       next[index][field] = value;
@@ -77,24 +126,49 @@ export const AdminPage: React.FC = () => {
       return;
     }
 
-    if (examples.length === 0 || examples.some((example) => !example.input.trim() || !example.output.trim())) {
-      alert('Add at least one example with both input and output.');
+    if (!/^[A-Za-z_$][\w$]*$/.test(functionName)) {
+      alert('Function name must be a valid identifier, such as sum or twoSum.');
       return;
     }
 
-    const savedExamples = examples.map((example) => ({
-      input: example.input.trim(),
-      output: example.output.trim(),
-      explanation: example.explanation?.trim() || undefined,
-    }));
-
-    if (testCases.some((testCase) => !testCase.input.trim() || !testCase.expectedOutput.trim())) {
-      alert('Every test case must have both input and expected output.');
+    if (parameters.some((parameter) => !/^[A-Za-z_$][\w$]*$/.test(parameter.name)
+      || !FUNCTION_VALUE_TYPES.includes(parameter.type))
+      || new Set(parameters.map((parameter) => parameter.name)).size !== parameters.length) {
+      alert('Parameter names must be valid, unique identifiers with supported types.');
       return;
     }
 
-    if (LANGUAGE_OPTIONS.some(({ id }) => !starterCode[id].trim())) {
-      alert('Provide starter code for every supported language.');
+    let parsedExamples: Array<{ args: unknown[]; expected: unknown }>;
+    let parsedTestCases: Array<{ args: unknown[]; expected: unknown }>;
+    try {
+      parsedExamples = examples.map((example) => ({
+        args: JSON.parse(example.input),
+        expected: JSON.parse(example.output),
+      }));
+      parsedTestCases = testCases.map((testCase) => ({
+        args: JSON.parse(testCase.args),
+        expected: JSON.parse(testCase.expected),
+      }));
+    } catch {
+      alert('Examples and test cases must contain valid JSON values.');
+      return;
+    }
+
+    if (parsedExamples.length === 0 || parsedExamples.some(({ args, expected }) =>
+      !Array.isArray(args)
+      || args.length !== parameters.length
+      || args.some((arg, index) => !isValueOfType(arg, parameters[index].type))
+      || !isValueOfType(expected, returnType))) {
+      alert('Each example must provide a JSON argument array and a return value matching the function signature.');
+      return;
+    }
+
+    if (parsedTestCases.length === 0 || parsedTestCases.some(({ args, expected }) =>
+      !Array.isArray(args)
+      || args.length !== parameters.length
+      || args.some((arg, index) => !isValueOfType(arg, parameters[index].type))
+      || !isValueOfType(expected, returnType))) {
+      alert('Each test case must provide a JSON argument array and a return value matching the function signature.');
       return;
     }
 
@@ -114,21 +188,32 @@ export const AdminPage: React.FC = () => {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const formattedTestCases: TestCase[] = testCases.map((tc, idx) => ({
+    const formattedTestCases: TestCase[] = parsedTestCases.map((testCase, idx) => ({
       id: idx + 1,
-      input: tc.input.trim(),
-      expectedOutput: tc.expectedOutput.trim(),
+      input: JSON.stringify(testCase.args),
+      expectedOutput: JSON.stringify(testCase.expected),
+      args: testCase.args,
+      expected: testCase.expected,
     }));
 
+    const starterCode = getFunctionProblemStarterCode(functionName, parameters, returnType);
     const newProblem: Problem = {
       id: problemId,
       title: title.trim(),
       difficulty,
       category: category.trim(),
       description: description.trim(),
+      mode: 'function',
+      functionName,
+      parameters,
+      returnType,
       createdBy: 'Staff / Admin',
       createdAt: new Date().toISOString(),
-      examples: savedExamples,
+      examples: parsedExamples.map((example, index) => ({
+        input: JSON.stringify(example.args),
+        output: JSON.stringify(example.expected),
+        explanation: examples[index].explanation?.trim() || undefined,
+      })),
       constraints,
       starterCode,
       testCases: formattedTestCases,
@@ -147,11 +232,16 @@ export const AdminPage: React.FC = () => {
     // Reset Form
     setTitle('');
     setDescription('');
-    setExamples([{ input: '', output: '', explanation: '' }]);
-    setStarterCode(getCustomProblemStarterCode());
+    setFunctionName('sum');
+    setParameters([
+      { name: 'a', type: 'integer' },
+      { name: 'b', type: 'integer' },
+    ]);
+    setReturnType('integer');
+    setExamples([{ input: '[2, 3]', output: '5', explanation: 'Return the sum of the two arguments.' }]);
     setTestCases([
-      { input: '1 2 3', expectedOutput: '3 2 1' },
-      { input: '4 5', expectedOutput: '5 4' },
+      { args: '[2, 3]', expected: '5' },
+      { args: '[-4, 10]', expected: '6' },
     ]);
 
     setSuccessToast(`Challenge "${newProblem.title}" generated and published!`);
@@ -401,6 +491,86 @@ export const AdminPage: React.FC = () => {
                 />
               </div>
 
+              {/* Function Contract */}
+              <div className="p-4 bg-[#131318] border border-[#262632] rounded-xl space-y-3">
+                <div>
+                  <h3 className="font-semibold text-white text-xs">Function Contract</h3>
+                  <p className="text-[11px] text-gray-400">
+                    Students implement this method. The judge supplies the main/driver code.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-gray-300 font-semibold">Method Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={functionName}
+                      onChange={(e) => setFunctionName(e.target.value)}
+                      className="w-full bg-[#1b1b24] border border-[#2c2c38] rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-gray-300 font-semibold">Return Type</label>
+                    <select
+                      value={returnType}
+                      onChange={(e) => setReturnType(e.target.value as FunctionValueType)}
+                      className="w-full bg-[#1b1b24] border border-[#2c2c38] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                    >
+                      {FUNCTION_VALUE_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-300 font-semibold">Parameters</span>
+                    <button
+                      type="button"
+                      onClick={() => setParameters((prev) => [...prev, { name: `arg${prev.length + 1}`, type: 'integer' }])}
+                      className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-black border border-amber-500/30 text-xs font-semibold transition-all flex items-center space-x-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Parameter</span>
+                    </button>
+                  </div>
+                  {parameters.map((parameter, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        required
+                        aria-label={`Parameter ${index + 1} name`}
+                        placeholder="Parameter name"
+                        value={parameter.name}
+                        onChange={(e) => setParameters((prev) => prev.map((item, i) =>
+                          i === index ? { ...item, name: e.target.value } : item
+                        ))}
+                        className="flex-1 bg-[#1b1b24] border border-[#2c2c38] rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500"
+                      />
+                      <select
+                        aria-label={`Parameter ${index + 1} type`}
+                        value={parameter.type}
+                        onChange={(e) => setParameters((prev) => prev.map((item, i) =>
+                          i === index ? { ...item, type: e.target.value as FunctionValueType } : item
+                        ))}
+                        className="w-40 bg-[#1b1b24] border border-[#2c2c38] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                      >
+                        {FUNCTION_VALUE_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+                      </select>
+                      {parameters.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setParameters((prev) => prev.filter((_, i) => i !== index))}
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-rose-400 hover:bg-[#252530]"
+                          title="Remove parameter"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Problem Examples */}
               <div className="p-3 bg-[#131318] border border-[#262632] rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
@@ -434,14 +604,14 @@ export const AdminPage: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <textarea
                         rows={2}
-                        placeholder="Input"
+                        placeholder="Arguments as a JSON array, e.g. [2, 3]"
                         value={example.input}
                         onChange={(e) => handleExampleChange(index, 'input', e.target.value)}
                         className="w-full bg-[#131318] border border-[#2e2e3c] rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
                       />
                       <textarea
                         rows={2}
-                        placeholder="Output"
+                        placeholder="Expected return value as JSON, e.g. 5"
                         value={example.output}
                         onChange={(e) => handleExampleChange(index, 'output', e.target.value)}
                         className="w-full bg-[#131318] border border-[#2e2e3c] rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
@@ -464,7 +634,7 @@ export const AdminPage: React.FC = () => {
                   <div>
                     <h3 className="font-semibold text-white text-xs">Automated Evaluation Test Cases</h3>
                     <p className="text-[11px] text-gray-400">
-                      Each input is sent to the solution on stdin; its output is compared with the expected output.
+                      The judge calls the method with these JSON arguments and compares its return value.
                     </p>
                   </div>
                   <button
@@ -486,16 +656,18 @@ export const AdminPage: React.FC = () => {
                       <span className="font-mono text-[10px] text-gray-500 w-6">#{index + 1}</span>
                       <textarea
                         rows={2}
-                        placeholder="Input (stdin): e.g. 1 2 3"
-                        value={tc.input}
-                        onChange={(e) => handleTestCaseChange(index, 'input', e.target.value)}
+                        required
+                        placeholder="Arguments (JSON array), e.g. [2, 3]"
+                        value={tc.args}
+                        onChange={(e) => handleTestCaseChange(index, 'args', e.target.value)}
                         className="flex-1 bg-[#131318] border border-[#2e2e3c] rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
                       />
                       <textarea
                         rows={2}
-                        placeholder="Expected Output: e.g. 3 2 1"
-                        value={tc.expectedOutput}
-                        onChange={(e) => handleTestCaseChange(index, 'expectedOutput', e.target.value)}
+                        required
+                        placeholder="Expected return value (JSON), e.g. 5"
+                        value={tc.expected}
+                        onChange={(e) => handleTestCaseChange(index, 'expected', e.target.value)}
                         className="flex-1 bg-[#131318] border border-[#2e2e3c] rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
                       />
                       {testCases.length > 1 && (
@@ -524,26 +696,22 @@ export const AdminPage: React.FC = () => {
                 />
               </div>
 
-              {/* Starter Code */}
+              {/* Generated Starter Code */}
               <div className="p-4 bg-[#131318] border border-[#262632] rounded-xl space-y-3">
                 <div>
-                  <h3 className="font-semibold text-white text-xs">Starter Code by Language</h3>
+                  <h3 className="font-semibold text-white text-xs">Generated Starter Code</h3>
                   <p className="text-[11px] text-gray-400">
-                    Students receive the matching starter code when they open this problem.
+                    Templates are generated from the function contract. The driver/main is supplied by the judge.
                   </p>
                 </div>
                 {LANGUAGE_OPTIONS.map((language) => (
                   <div key={language.id} className="space-y-1.5">
                     <label className="text-gray-300 font-semibold">{language.name}</label>
                     <textarea
-                      required
                       rows={7}
-                      value={starterCode[language.id]}
-                      onChange={(e) => setStarterCode((prev) => ({
-                        ...prev,
-                        [language.id]: e.target.value,
-                      }))}
-                      className="w-full bg-[#1b1b24] border border-[#2c2c38] rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+                      readOnly
+                      value={getFunctionProblemStarterCode(functionName, parameters, returnType)[language.id]}
+                      className="w-full bg-[#1b1b24] border border-[#2c2c38] rounded-xl px-3 py-2 text-gray-300 font-mono text-xs focus:outline-none"
                     />
                   </div>
                 ))}

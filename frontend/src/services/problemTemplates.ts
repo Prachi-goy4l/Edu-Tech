@@ -1,4 +1,50 @@
-import { Problem, SupportedLanguage } from '../types';
+import { FunctionParameter, FunctionValueType, Problem, SupportedLanguage } from '../types';
+
+const pythonTypes: Record<FunctionValueType, string> = {
+  integer: 'int',
+  number: 'float',
+  boolean: 'bool',
+  string: 'str',
+  'integer[]': 'list[int]',
+  'number[]': 'list[float]',
+  'boolean[]': 'list[bool]',
+  'string[]': 'list[str]',
+};
+
+const cppTypes: Record<FunctionValueType, string> = {
+  integer: 'int',
+  number: 'double',
+  boolean: 'bool',
+  string: 'string',
+  'integer[]': 'vector<int>',
+  'number[]': 'vector<double>',
+  'boolean[]': 'vector<bool>',
+  'string[]': 'vector<string>',
+};
+
+const javaTypes: Record<FunctionValueType, string> = {
+  integer: 'int',
+  number: 'double',
+  boolean: 'boolean',
+  string: 'String',
+  'integer[]': 'int[]',
+  'number[]': 'double[]',
+  'boolean[]': 'boolean[]',
+  'string[]': 'String[]',
+};
+
+function javaDefaultValue(type: FunctionValueType): string {
+  switch (type) {
+    case 'integer': return '0';
+    case 'number': return '0.0';
+    case 'boolean': return 'false';
+    case 'string': return '""';
+    case 'integer[]': return 'new int[0]';
+    case 'number[]': return 'new double[0]';
+    case 'boolean[]': return 'new boolean[0]';
+    case 'string[]': return 'new String[0]';
+  }
+}
 
 export function getCustomProblemStarterCode(): Record<SupportedLanguage, string> {
   return {
@@ -52,6 +98,29 @@ class Main {
     }
 }
 `,
+  };
+}
+
+export function getFunctionProblemStarterCode(
+  functionName: string,
+  parameters: FunctionParameter[],
+  returnType: FunctionValueType
+): Record<SupportedLanguage, string> {
+  const pythonParameters = parameters
+    .map((parameter) => `${parameter.name}: ${pythonTypes[parameter.type]}`)
+    .join(', ');
+  const cppParameters = parameters
+    .map((parameter) => `${cppTypes[parameter.type]} ${parameter.name}`)
+    .join(', ');
+  const javaParameters = parameters
+    .map((parameter) => `${javaTypes[parameter.type]} ${parameter.name}`)
+    .join(', ');
+
+  return {
+    python: `class Solution:\n    def ${functionName}(self${pythonParameters ? `, ${pythonParameters}` : ''}) -> ${pythonTypes[returnType]}:\n        # Write your solution here\n        pass\n`,
+    javascript: `class Solution {\n    ${functionName}(${parameters.map((parameter) => parameter.name).join(', ')}) {\n        // Write your solution here\n    }\n}\n`,
+    cpp: `#include <string>\n#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    ${cppTypes[returnType]} ${functionName}(${cppParameters}) {\n        // Write your solution here\n        return {};\n    }\n};\n`,
+    java: `class Solution {\n    public ${javaTypes[returnType]} ${functionName}(${javaParameters}) {\n        // Write your solution here\n        return ${javaDefaultValue(returnType)};\n    }\n}\n`,
   };
 }
 

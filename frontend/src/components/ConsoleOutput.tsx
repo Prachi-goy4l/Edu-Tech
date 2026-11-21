@@ -32,6 +32,11 @@ export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
     }
   }, [result]);
 
+  React.useEffect(() => {
+    setSelectedCaseIndex(0);
+    setUseCustomInput(false);
+  }, [problem.id]);
+
   return (
     <div className="h-full flex flex-col bg-[#1e1e1e] select-text overflow-hidden">
       {/* Console Header / Tab Controls & Run Button */}
@@ -132,16 +137,18 @@ export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
                 ))}
               </div>
 
-              <button
-                onClick={() => setUseCustomInput(!useCustomInput)}
-                className={`px-2.5 py-1 text-xs rounded border transition-colors ${
-                  useCustomInput
-                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                    : 'bg-[#252525] border-[#383838] text-gray-400 hover:text-white'
-                }`}
-              >
-                {useCustomInput ? 'Custom Input Enabled' : '+ Custom Input'}
-              </button>
+              {problem.mode !== 'function' && (
+                <button
+                  onClick={() => setUseCustomInput(!useCustomInput)}
+                  className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+                    useCustomInput
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                      : 'bg-[#252525] border-[#383838] text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {useCustomInput ? 'Custom Input Enabled' : '+ Custom Input'}
+                </button>
+              )}
             </div>
 
             {useCustomInput ? (
@@ -160,14 +167,18 @@ export const ConsoleOutput: React.FC<ConsoleOutputProps> = ({
                 <div>
                   <div className="text-gray-500 text-xs mb-1">Input:</div>
                   <div className="bg-[#181818] border border-[#2d2d2d] rounded-md p-2.5 font-mono text-gray-200">
-                    {problem.testCases[selectedCaseIndex]?.input}
+                    {problem.mode === 'function'
+                      ? JSON.stringify(problem.testCases[selectedCaseIndex]?.args)
+                      : problem.testCases[selectedCaseIndex]?.input}
                   </div>
                 </div>
 
                 <div>
                   <div className="text-gray-500 text-xs mb-1">Expected Output:</div>
                   <div className="bg-[#181818] border border-[#2d2d2d] rounded-md p-2.5 font-mono text-amber-400">
-                    {problem.testCases[selectedCaseIndex]?.expectedOutput}
+                    {problem.mode === 'function'
+                      ? JSON.stringify(problem.testCases[selectedCaseIndex]?.expected)
+                      : problem.testCases[selectedCaseIndex]?.expectedOutput}
                   </div>
                 </div>
               </div>

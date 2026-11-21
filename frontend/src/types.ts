@@ -4,6 +4,21 @@ export type SupportedLanguage = 'python' | 'javascript' | 'cpp' | 'java';
 
 export type UserRole = 'student' | 'admin';
 
+export type FunctionValueType =
+  | 'integer'
+  | 'number'
+  | 'boolean'
+  | 'string'
+  | 'integer[]'
+  | 'number[]'
+  | 'boolean[]'
+  | 'string[]';
+
+export interface FunctionParameter {
+  name: string;
+  type: FunctionValueType;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -17,6 +32,8 @@ export interface TestCase {
   id: number;
   input: string;
   expectedOutput: string;
+  args?: unknown[];
+  expected?: unknown;
 }
 
 export interface Problem {
@@ -25,6 +42,10 @@ export interface Problem {
   difficulty: Difficulty;
   category: string;
   description: string;
+  mode?: 'stdin' | 'function';
+  functionName?: string;
+  parameters?: FunctionParameter[];
+  returnType?: FunctionValueType;
   acceptanceRate?: string;
   createdBy?: string;
   createdAt?: string;
@@ -73,7 +94,7 @@ export interface SubmissionRecord {
   problemId: string;
   problemTitle: string;
   language: SupportedLanguage;
-  status: 'Accepted' | 'Wrong Answer' | 'Runtime Error' | 'Compile Error';
+  status: 'Accepted' | 'Wrong Answer' | 'Runtime Error' | 'Compile Error' | 'Time Limit Exceeded';
   runtimeMs: number;
   testCasesPassed: number;
   totalTestCases: number;
